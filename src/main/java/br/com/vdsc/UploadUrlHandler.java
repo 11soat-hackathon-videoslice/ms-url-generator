@@ -1,8 +1,6 @@
 package br.com.vdsc;
 
-import br.com.vdsc.config.AppConfig;
 import com.amazonaws.HttpMethod;
-import com.amazonaws.regions.Regions;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent;
@@ -19,25 +17,18 @@ import java.util.Map;
 
 public class UploadUrlHandler implements RequestHandler<APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent> {
 
-    private final String bucketName;
-    private final String uploadPrefix;
-    private final long urlExpirationMs;
-    private final AmazonS3 s3Client;
-    private final ObjectMapper objectMapper;
+    // Static variables loaded once during Lambda container initialization
+    private static final String BUCKET_NAME = System.getProperty("BUCKET_NAME", "vdsc-prd-s3-videos");
+    private static final String UPLOAD_PREFIX = System.getProperty("UPLOAD_PREFIX", "uploads/");
+    private static final long URL_EXPIRATION_MS = Long.parseLong(System.getProperty("URL_EXPIRATION_MS", "900000"));
+    private static final String AWS_REGION = System.getProperty("AWS_REGION", "us-east-1");
 
-    public UploadUrlHandler() {
-        // Load configuration from application.yaml
-        AppConfig config = new AppConfig();
+    private static final AmazonS3 s3Client = AmazonS3ClientBuilder.standard()
+            .withRegion(AWS_REGION)
+            .build();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
-        this.bucketName = config.getBucketName();
-        this.uploadPrefix = config.getUploadPrefix();
-        this.urlExpirationMs = config.getUrlExpirationMs();
 
-        this.s3Client = AmazonS3ClientBuilder.standard()
-                .withRegion(Regions.fromName(config.getAwsRegion()))
-                .build();
-        this.objectMapper = new ObjectMapper();
-    }
 
     @Override
     public APIGatewayProxyResponseEvent handleRequest(APIGatewayProxyRequestEvent request, Context context) {
@@ -58,24 +49,26 @@ public class UploadUrlHandler implements RequestHandler<APIGatewayProxyRequestEv
             // Extract fileName from path parameters
             String fileName = extractFileNameFromRequest(request, context);
 
+            // Validate fileName
             if (fileName == null || fileName.trim().isEmpty()) {
-                return createErrorResponse("fileName is required in path", 400);
+                context.getLogger().log("fileName is required but was not provided");
+                return createErrorResponse("fileName is required in path parameters", 400);
             }
 
-            // Validate and sanitize fileName
-            fileName = sanitizeFileName(fileName);
+            // Sanitize fileName to prevent path traversal
+            fileName = fileName.replaceAll("[^a-zA-Z0-9._-]", "_");
 
             context.getLogger().log("Generating URL for fileName: " + fileName);
 
-            String s3Key = uploadPrefix + fileName;
+            String s3Key = UPLOAD_PREFIX + fileName;
 
             // Calculate expiration time
             Date expiration = new Date();
-            expiration.setTime(expiration.getTime() + urlExpirationMs);
+            expiration.setTime(expiration.getTime() + URL_EXPIRATION_MS);
 
             // Generate the presigned URL
             GeneratePresignedUrlRequest generatePresignedUrlRequest =
-                    new GeneratePresignedUrlRequest(bucketName, s3Key)
+                    new GeneratePresignedUrlRequest(BUCKET_NAME, s3Key)
                             .withMethod(HttpMethod.PUT)
                             .withExpiration(expiration);
 
@@ -131,29 +124,6 @@ public class UploadUrlHandler implements RequestHandler<APIGatewayProxyRequestEv
         }
     }
 
-    /**
-     * Sanitizes fileName to prevent security issues
-     * Removes path traversal characters and ensures safe filename
-     */
-    private String sanitizeFileName(String fileName) {
-        if (fileName == null) {
-            return null;
-        }
-
-        // Remove any path traversal attempts
-        fileName = fileName.replace("..", "");
-        fileName = fileName.replace("/", "");
-        fileName = fileName.replace("\\", "");
-
-        // Trim whitespace
-        fileName = fileName.trim();
-
-        return fileName;
-    }
-
-    /**
-     * Creates an error response with the specified message and status code
-     */
     private APIGatewayProxyResponseEvent createErrorResponse(String errorMessage, int statusCode) {
         APIGatewayProxyResponseEvent response = new APIGatewayProxyResponseEvent();
         Map<String, Object> errorBody = new HashMap<>();
