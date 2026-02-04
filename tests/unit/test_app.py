@@ -235,7 +235,7 @@ class TestLambdaHandler:
             assert result['statusCode'] == 200
             assert 'headers' in result
             assert result['headers']['Access-Control-Allow-Origin'] == '*'
-            assert result['headers']['Access-Control-Allow-Methods'] == 'GET,POST,PUT'
+            assert result['headers']['Access-Control-Allow-Methods'] == 'POST, OPTIONS'
             assert result['headers']['Access-Control-Allow-Headers'] == 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
 
     def test_response_includes_cors_headers_on_error(self, lambda_context):
@@ -252,7 +252,7 @@ class TestLambdaHandler:
         assert result['statusCode'] == 500
         assert 'headers' in result
         assert result['headers']['Access-Control-Allow-Origin'] == '*'
-        assert result['headers']['Access-Control-Allow-Methods'] == 'GET,POST,PUT'
+        assert result['headers']['Access-Control-Allow-Methods'] == 'POST, OPTIONS'
         assert result['headers']['Access-Control-Allow-Headers'] == 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
 
     def test_cors_headers_present_when_controller_raises_exception(self, valid_download_event, lambda_context):
@@ -295,7 +295,7 @@ class TestGetCorsHeaders:
         headers = _get_cors_headers()
 
         assert 'Access-Control-Allow-Methods' in headers
-        assert headers['Access-Control-Allow-Methods'] == 'GET,POST,PUT'
+        assert headers['Access-Control-Allow-Methods'] == 'POST, OPTIONS'
 
     def test_cors_headers_contain_allow_headers(self):
         """Testa se headers contêm Access-Control-Allow-Headers"""
