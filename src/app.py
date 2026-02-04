@@ -10,6 +10,14 @@ logger = logging.getLogger(__name__)
 
 config = UrlConfig()
 
+def _get_cors_headers() -> Dict[str, str]:
+    """Retorna headers CORS para resposta."""
+    return {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,POST,PUT',
+        'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+    }
+
 def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
     """Handler principal da Lambda para geração de URLs pré-assinadas."""
 
@@ -24,11 +32,15 @@ def lambda_handler(event: Dict[str, Any], context: Any) -> Dict[str, Any]:
 
         response = controller.generate_presigned_url(request)
         logger.info(f"URL pré-assinada gerada com sucesso para o arquivo {request.file_name}")
-        return {'statusCode': 200, 'body': json.dumps(response)}
+        return {'statusCode': 200,
+                'headers': _get_cors_headers(),
+                'body': json.dumps(response)}
 
     except Exception as e:
         logger.error(f"Erro ao gerar url pré-assinada: {e}", exc_info=True)
-        return {'statusCode': 500, 'body': json.dumps({"error": str(e)})}
+        return {'statusCode': 500,
+                'headers': _get_cors_headers(),
+                'body': json.dumps({"error": str(e)})}
 
 
 def _extract_file_name(event) -> str:

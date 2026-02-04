@@ -218,9 +218,115 @@ class TestLambdaHandler:
 
             assert result['statusCode'] == 200
 
+    def test_response_includes_cors_headers_on_success(self, valid_download_event, lambda_context):
+        """Testa se a resposta inclui headers CORS corretos"""
+        with patch('app.controller.generate_presigned_url') as mock_controller:
+            mock_controller.return_value = {
+                'url_endpoint': 'https://s3.amazonaws.com/test-bucket/finished/video123.mp4',
+                'file_name': 'video123.mp4',
+                'action': 'download',
+                'method': 'get_object',
+                'fields': {'expireIn': 3600}
+            }
+
+            from app import lambda_handler
+            result = lambda_handler(valid_download_event, lambda_context)
+
+            assert result['statusCode'] == 200
+            assert 'headers' in result
+            assert result['headers']['Access-Control-Allow-Origin'] == '*'
+            assert result['headers']['Access-Control-Allow-Methods'] == 'GET,POST,PUT'
+            assert result['headers']['Access-Control-Allow-Headers'] == 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+
+    def test_response_includes_cors_headers_on_error(self, lambda_context):
+        """Testa se resposta de erro também inclui headers CORS"""
+        event = {
+            'path': '/download/test.mp4',
+            'httpMethod': 'GET',
+            'pathParameters': {}
+        }
+
+        from app import lambda_handler
+        result = lambda_handler(event, lambda_context)
+
+        assert result['statusCode'] == 500
+        assert 'headers' in result
+        assert result['headers']['Access-Control-Allow-Origin'] == '*'
+        assert result['headers']['Access-Control-Allow-Methods'] == 'GET,POST,PUT'
+        assert result['headers']['Access-Control-Allow-Headers'] == 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+
+    def test_cors_headers_present_when_controller_raises_exception(self, valid_download_event, lambda_context):
+        """Testa se headers CORS estão presentes quando controller lança exceção"""
+        with patch('app.controller.generate_presigned_url', side_effect=Exception('Erro no S3')):
+            from app import lambda_handler
+            result = lambda_handler(valid_download_event, lambda_context)
+
+            assert result['statusCode'] == 500
+            assert 'headers' in result
+            assert result['headers']['Access-Control-Allow-Origin'] == '*'
+
 
 @pytest.mark.unit
-class TestExtractFileName:
+class TestGetCorsHeaders:
+    """Testes para a função _get_cors_headers"""
+
+    def test_returns_cors_headers_dict(self):
+        """Testa se _get_cors_headers retorna um dicionário com headers CORS"""
+        from app import _get_cors_headers
+
+        headers = _get_cors_headers()
+
+        assert isinstance(headers, dict)
+        assert len(headers) == 3
+
+    def test_cors_headers_contain_allow_origin(self):
+        """Testa se headers contêm Access-Control-Allow-Origin"""
+        from app import _get_cors_headers
+
+        headers = _get_cors_headers()
+
+        assert 'Access-Control-Allow-Origin' in headers
+        assert headers['Access-Control-Allow-Origin'] == '*'
+
+    def test_cors_headers_contain_allow_methods(self):
+        """Testa se headers contêm Access-Control-Allow-Methods"""
+        from app import _get_cors_headers
+
+        headers = _get_cors_headers()
+
+        assert 'Access-Control-Allow-Methods' in headers
+        assert headers['Access-Control-Allow-Methods'] == 'GET,POST,PUT'
+
+    def test_cors_headers_contain_allow_headers(self):
+        """Testa se headers contêm Access-Control-Allow-Headers"""
+        from app import _get_cors_headers
+
+        headers = _get_cors_headers()
+
+        assert 'Access-Control-Allow-Headers' in headers
+        assert headers['Access-Control-Allow-Headers'] == 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+
+    def test_cors_headers_values_are_strings(self):
+        """Testa se todos os valores dos headers são strings"""
+        from app import _get_cors_headers
+
+        headers = _get_cors_headers()
+
+        for key, value in headers.items():
+            assert isinstance(value, str)
+
+    def test_cors_headers_keys_are_correct(self):
+        """Testa se as chaves dos headers CORS são exatamente as esperadas"""
+        from app import _get_cors_headers
+
+        headers = _get_cors_headers()
+
+        expected_keys = {
+            'Access-Control-Allow-Origin',
+            'Access-Control-Allow-Methods',
+            'Access-Control-Allow-Headers'
+        }
+        assert set(headers.keys()) == expected_keys
     """Testes para a função _extract_file_name"""
 
     def test_successfully_extracts_filename_from_valid_event(self):
