@@ -27,6 +27,7 @@ on:
       - 'tests/**'
 
 env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
   FUNCTION_NAME: ${{ vars.FUNCTION_NAME }}
   PYTHON_VERSION: '3.12'
   S3_BUCKET_NAME: ${{ vars.S3_BUCKET_NAME }}
