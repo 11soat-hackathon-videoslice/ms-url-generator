@@ -35,7 +35,10 @@ class S3Repository(UrlDataSourceInterface):
                 },
                 ExpiresIn=expiration
             )
-            params = {"expireIn": expiration}
+            params = {
+                "expireIn": expiration,
+                "s3Key": key
+            }
             return UrlResponseDto(
                 url_endpoint=response,
                 file_name=request.file_name,
