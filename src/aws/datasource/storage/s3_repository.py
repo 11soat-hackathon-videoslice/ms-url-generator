@@ -1,5 +1,6 @@
 import logging
 import boto3
+from botocore.config import Config
 
 from core.dtos.url_dto import UrlRequestDto, UrlResponseDto
 from core.interfaces.url.url_datasource_interface import UrlDataSourceInterface
@@ -10,9 +11,9 @@ logger = logging.getLogger(__name__)
 
 class S3Repository(UrlDataSourceInterface):
 
-    def __init__(self, config: dict = None):
-        self.s3_client = boto3.client('s3')
-        self.config = config or {}
+    def __init__(self, config: dict):
+        self.config = config
+        self.s3_client = boto3.client('s3',config=Config(signature_version=config['signature_version'],region_name=config['aws_region']))
         self.bucket_name = self.config.get('bucket_name', 'vdsc-prd-s3-videos')
 
     def generate_download_presigned_url(self, request: UrlRequestDto) -> UrlResponseDto:

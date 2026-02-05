@@ -13,6 +13,8 @@ class UrlConfig():
 
     def _initialize(self):
         self.s3 = {
+            'aws_region': os.getenv('AWS_REGION', 'us-east-1'),
+            'signature_version': os.getenv('S3_SIGNATURE_VERSION', 's3v4'),
             'bucket_name': os.getenv('S3_BUCKET_NAME', 'vdsc-prd-s3-videos'),
             'expiration': {
                 'download': int(os.getenv('S3_URL_DOWNLOAD_EXPIRATION', '180')),

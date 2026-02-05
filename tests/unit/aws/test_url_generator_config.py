@@ -13,6 +13,8 @@ def mock_env_variables(monkeypatch):
     monkeypatch.setenv('S3_URL_UPLOAD_EXPIRATION', '1800')
     monkeypatch.setenv('S3_BUCKET_DIR_UPLOADS', 'test-uploads/')
     monkeypatch.setenv('S3_BUCKET_DIR_FINISHED', 'test-finished/')
+    monkeypatch.setenv('AWS_REGION', 'us-east-1')
+    monkeypatch.setenv('S3_SIGNATURE_VERSION', 's3v4')
 
 
 @pytest.mark.unit

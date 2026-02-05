@@ -12,6 +12,8 @@ import boto3
 def s3_config():
     """Fixture com configuração válida do S3"""
     return {
+        'aws_region': 'us-east-1',
+        'signature_version': 's3v4',
         'bucket_name': 'test-bucket',
         'expiration': {
             'download': 3600,
@@ -129,21 +131,7 @@ class TestS3Repository:
             call_args = mock_method.call_args
             assert call_args[1]['Params']['Bucket'] == 'test-bucket'
 
-    @mock_aws
-    def test_uses_default_bucket_when_config_is_empty(self):
-        """Testa uso do bucket padrão quando configuração está vazia"""
-        from aws.datasource.storage.s3_repository import S3Repository
-        repository = S3Repository({})
 
-        assert repository.bucket_name == 'vdsc-prd-s3-videos'
-
-    @mock_aws
-    def test_uses_default_bucket_when_config_is_none(self):
-        """Testa uso do bucket padrão quando configuração é None"""
-        from aws.datasource.storage.s3_repository import S3Repository
-        repository = S3Repository(None)
-
-        assert repository.bucket_name == 'vdsc-prd-s3-videos'
 
     @mock_aws
     def test_raises_error_when_s3_client_fails(self, s3_config, mock_url_request_dto):
@@ -170,6 +158,34 @@ class TestS3Repository:
 
         assert result.file_name == 'file with spaces & special.mp4'
         assert result.url_endpoint is not None
+
+    @mock_aws
+    def test_uses_default_bucket_name_when_not_in_config(self, mock_url_request_dto):
+        """Testa uso do bucket padrão quando bucket_name não está definido no config"""
+        s3_client = boto3.client('s3', region_name='us-east-1')
+        s3_client.create_bucket(Bucket='vdsc-prd-s3-videos')
+
+        config = {
+            'aws_region': 'us-east-1',
+            'signature_version': 's3v4',
+            'expiration': {
+                'download': 3600,
+                'upload': 900
+            },
+            'directories': {
+                'upload': 'uploads/',
+                'download': 'finished/'
+            },
+            'client_methods': {
+                'download': 'get_object',
+                'upload': 'put_object'
+            }
+        }
+
+        from aws.datasource.storage.s3_repository import S3Repository
+        repository = S3Repository(config)
+
+        assert repository.bucket_name == 'vdsc-prd-s3-videos'
 
     @mock_aws
     def test_handles_filename_with_subdirectories(self, s3_config, mock_url_request_dto):
