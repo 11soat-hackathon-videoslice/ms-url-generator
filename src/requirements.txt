@@ -1,0 +1,7 @@
+boto3
+pytest
+pytest-cov
+pytest-mock
+moto
+
+vdsc-core @ git+https://github.com/11soat-hackton-videoslice/video-slice-core.git@develop
