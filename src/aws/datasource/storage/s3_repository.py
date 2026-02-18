@@ -3,7 +3,7 @@ import boto3
 from botocore.config import Config
 
 from core.dtos.url_dto import UrlRequestDto, UrlResponseDto
-from core.interfaces.url.url_datasource_interface import UrlDataSourceInterface
+from core.interfaces.url.url_interfaces import UrlDataSourceInterface
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
