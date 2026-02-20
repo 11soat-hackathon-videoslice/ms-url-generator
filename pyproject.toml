@@ -27,8 +27,8 @@ dependencies = [
 where = ["src"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["src"]
+testpaths = ["."]
+pythonpath = ["../src"]
 markers = [
     "unit: marca testes unitários"
 ]
