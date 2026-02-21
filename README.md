@@ -21,6 +21,52 @@ O **ms-video-url-generator** é um microserviço serverless implementado como AW
 
 O microserviço segue os princípios da **Clean Architecture**, utilizando a biblioteca core [video-slice-core](https://github.com/11soat-hackathon-videoslice/video-slice-core) para implementação das camadas de domínio e aplicação.
 
+### Diagramas de Sequência
+
+#### Upload de Arquivo
+
+```mermaid
+sequenceDiagram
+    actor USR as Usuário Logado
+    participant WEB as vdsc-web-app
+    participant API as vdsc-prd-api
+    participant LMB as vdsc-prd-lmb-url-generator
+    participant S3 as vdsc-prd-s3-videos
+
+    USR->>WEB: Seleciona vídeo para upload
+    WEB->>API: POST /videos/upload/url/{fileName}
+    API->>LMB: Aciona função lambda
+    LMB->>S3: Gera URL pré-assinada (put_object)
+    S3-->>LMB: URL pré-assinada
+    LMB-->>API: URL pré-assinada
+    API-->>WEB: URL pré-assinada para upload
+    WEB->>S3: PUT — upload do vídeo via URL pré-assinada
+    S3-->>WEB: Upload concluído
+    WEB-->>USR: Upload realizado com sucesso
+```
+
+#### Download de Arquivo
+
+```mermaid
+sequenceDiagram
+    actor USR as Usuário Logado
+    participant WEB as vdsc-web-app
+    participant API as vdsc-prd-api
+    participant LMB as vdsc-prd-lmb-url-generator
+    participant S3 as vdsc-prd-s3-videos
+
+    USR->>WEB: Seleciona vídeo para download
+    WEB->>API: POST /videos/download/url/{fileName}
+    API->>LMB: Aciona função lambda
+    LMB->>S3: Gera URL pré-assinada (get_object)
+    S3-->>LMB: URL pré-assinada
+    LMB-->>API: URL pré-assinada
+    API-->>WEB: URL pré-assinada para download
+    WEB->>S3: GET — download do arquivo ZIP via URL pré-assinada
+    S3-->>WEB: Arquivo ZIP
+    WEB-->>USR: Download do arquivo ZIP concluído
+```
+
 
 ### Fluxo de Execução
 
@@ -29,6 +75,8 @@ O microserviço segue os princípios da **Clean Architecture**, utilizando a bib
 3. **Controller** (da biblioteca core) orquestra a geração da URL
 4. **Gateway S3** gera a URL pré-assinada
 5. **Response** retorna URL pré-assinada com headers CORS
+
+
 
 ## 🚀 Tecnologias
 
