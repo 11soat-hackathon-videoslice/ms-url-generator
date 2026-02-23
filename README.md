@@ -28,10 +28,10 @@ O microserviço segue os princípios da **Clean Architecture**, utilizando a bib
 ```mermaid
 sequenceDiagram
     actor USR as Usuário Logado
-    participant WEB as vdsc-web-app
-    participant API as vdsc-prd-api
-    participant LMB as vdsc-prd-lmb-url-generator
-    participant S3 as vdsc-prd-s3-videos
+    participant WEB as vdsc-web-app<br/>(Frontend React)
+    participant API as vdsc-prd-api<br/>(API Gateway)
+    participant LMB as vdsc-prd-lmb-url-generator<br/>(Lambda)
+    participant S3 as vdsc-prd-s3-videos<br/>(S3 Bucket)
 
     USR->>WEB: Seleciona vídeo para upload
     WEB->>API: POST /videos/upload/url/{fileName}
